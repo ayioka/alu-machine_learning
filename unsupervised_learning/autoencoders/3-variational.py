@@ -6,8 +6,8 @@ import tensorflow.keras as keras
 K = keras.backend
 
 
-def sample(args):
-    """Sampling"""
+def sampling(args):
+    """sample latent vector"""
 
     mu, log_var = args
 
@@ -20,16 +20,19 @@ def sample(args):
     ) * epsilon
 
 
-def autoencoder(input_dims,
-                hidden_layers,
-                latent_dims):
-    """Creates VAE"""
+def autoencoder(
+        input_dims,
+        hidden_layers,
+        latent_dims):
+    """creates VAE"""
 
     inputs = keras.Input(
         shape=(input_dims,)
     )
 
     x = inputs
+
+    # encoder hidden layers
 
     for nodes in hidden_layers:
 
@@ -49,13 +52,15 @@ def autoencoder(input_dims,
     )(x)
 
     latent = keras.layers.Lambda(
-        sample
+        sampling
     )([mu, log_var])
 
     encoder = keras.Model(
         inputs,
         [latent, mu, log_var]
     )
+
+    # decoder
 
     latent_inputs = keras.Input(
         shape=(latent_dims,)
@@ -89,32 +94,29 @@ def autoencoder(input_dims,
         reconstructed
     )
 
-    reconstruction_loss = \
+    reconstruction = \
         keras.losses.binary_crossentropy(
             inputs,
             reconstructed
         )
 
-    reconstruction_loss *= input_dims
+    reconstruction *= input_dims
 
-    kl_loss = 1 + log_var
-    kl_loss -= K.square(mu)
-    kl_loss -= K.exp(log_var)
+    kl = 1 + log_var
+    kl -= K.square(mu)
+    kl -= K.exp(log_var)
 
-    kl_loss = K.sum(
-        kl_loss,
+    kl = K.sum(
+        kl,
         axis=-1
     )
 
-    kl_loss *= -0.5
-
-    total_loss = K.mean(
-        reconstruction_loss +
-        kl_loss
-    )
+    kl *= -0.5
 
     auto.add_loss(
-        total_loss
+        K.mean(
+            reconstruction + kl
+        )
     )
 
     auto.compile(
