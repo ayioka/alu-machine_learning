@@ -9,23 +9,23 @@ def autoencoder(input_dims,
                 latent_dims):
     """Creates convolutional autoencoder"""
 
-    inputs = keras.Input(shape=input_dims)
+    inputs = keras.Input(
+        shape=input_dims
+    )
 
     x = inputs
-
-    # Encoder
 
     for f in filters:
 
         x = keras.layers.Conv2D(
             f,
-            (3,3),
-            activation='relu',
-            padding='same'
+            (3, 3),
+            padding='same',
+            activation='relu'
         )(x)
 
         x = keras.layers.MaxPooling2D(
-            (2,2),
+            (2, 2),
             padding='same'
         )(x)
 
@@ -33,8 +33,6 @@ def autoencoder(input_dims,
         inputs,
         x
     )
-
-    # Decoder
 
     latent_inputs = keras.Input(
         shape=latent_dims
@@ -49,8 +47,8 @@ def autoencoder(input_dims,
         x = keras.layers.Conv2D(
             f,
             (3,3),
-            activation='relu',
-            padding='same'
+            padding='same',
+            activation='relu'
         )(x)
 
         x = keras.layers.UpSampling2D(
@@ -60,8 +58,8 @@ def autoencoder(input_dims,
     x = keras.layers.Conv2D(
         rev_filters[-1],
         (3,3),
-        activation='relu',
-        padding='valid'
+        padding='valid',
+        activation='relu'
     )(x)
 
     x = keras.layers.UpSampling2D(
@@ -71,8 +69,8 @@ def autoencoder(input_dims,
     outputs = keras.layers.Conv2D(
         input_dims[-1],
         (3,3),
-        activation='sigmoid',
-        padding='same'
+        padding='same',
+        activation='sigmoid'
     )(x)
 
     decoder = keras.Model(

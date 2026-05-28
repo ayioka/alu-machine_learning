@@ -4,16 +4,15 @@
 import tensorflow.keras as keras
 
 
-def autoencoder(input_dims,
-                hidden_layers,
-                latent_dims,
-                lambtha):
+def autoencoder(input_dims, hidden_layers,
+                latent_dims, lambtha):
     """Creates sparse autoencoder"""
 
     inputs = keras.Input(shape=(input_dims,))
     x = inputs
 
     for nodes in hidden_layers:
+
         x = keras.layers.Dense(
             nodes,
             activation='relu'
@@ -37,7 +36,8 @@ def autoencoder(input_dims,
 
     x = latent_inputs
 
-    for nodes in reversed(hidden_layers):
+    for nodes in hidden_layers[::-1]:
+
         x = keras.layers.Dense(
             nodes,
             activation='relu'
@@ -67,4 +67,4 @@ def autoencoder(input_dims,
         loss='binary_crossentropy'
     )
 
-    return encoder, decoder, auto
+    return encoder, decoder, autoo
