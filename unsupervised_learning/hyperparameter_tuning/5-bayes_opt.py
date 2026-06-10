@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Module for Bayesian Optimization with full optimize loop."""
 import numpy as np
-from scipy.stats import norm
 GP = __import__('2-gp').GaussianProcess
 
 
@@ -48,7 +47,11 @@ class BayesianOptimization:
 
         with np.errstate(divide='ignore'):
             Z = imp / sigma
-            EI = imp * norm.cdf(Z) + sigma * norm.pdf(Z)
+            phi = np.exp(-0.5 * Z ** 2) / np.sqrt(2 * np.pi)
+            Phi = 0.5 * (1 + np.array([
+                float(__import__('math').erf(z / np.sqrt(2))) for z in Z
+            ]))
+            EI = imp * Phi + sigma * phi
             EI[sigma == 0.0] = 0.0
 
         X_next = self.X_s[np.argmax(EI)].reshape(-1)
@@ -67,8 +70,7 @@ class BayesianOptimization:
         for _ in range(iterations):
             X_next, _ = self.acquisition()
 
-            # Stop early if point already sampled
-            if np.any(np.isclose(self.gp.X, X_next)):
+            if np.any(X_next == self.gp.X):
                 break
 
             Y_next = self.f(X_next)
