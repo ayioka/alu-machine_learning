@@ -11,7 +11,7 @@ def bag_of_words(sentences, vocab=None):
 
     Args:
         sentences: list of sentences to analyze
-        vocab: list of vocabulary words to use for analysis
+        vocab: list of the vocabulary words to use for the analysis
 
     Returns:
         embeddings: numpy.ndarray of shape (s, f) containing the embeddings
@@ -21,17 +21,16 @@ def bag_of_words(sentences, vocab=None):
     vocab_set = set()
 
     for sentence in sentences:
-        # Convert to lowercase and split by non-alphanumeric characters,
-        # but keep standard word characters and apostrophes intact
-        words = ''.join(
-            c if c.isalnum() or c in "'-" else ' ' for c in sentence
-        ).lower().split()
+        # Lowercase, replace non-alphanumeric characters (except apostrophes) with spaces
+        cleaned = ''.join(
+            c if c.isalnum() or c == "'" else ' ' for c in sentence
+        ).lower()
+        words = cleaned.split()
         
-        # Clean up trailing apostrophes if any
-        cleaned_words = [w.strip("'") for w in words if w.strip("'")]
-        tokenized_sentences.append(cleaned_words)
+        # Keep tokens and maintain apostrophes properly
+        tokenized_sentences.append(words)
         if vocab is None:
-            vocab_set.update(cleaned_words)
+            vocab_set.update(words)
 
     if vocab is None:
         features = sorted(list(vocab_set))
