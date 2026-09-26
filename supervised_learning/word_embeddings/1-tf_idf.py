@@ -3,7 +3,6 @@
 Defines a function to create a TF-IDF embedding matrix.
 """
 import numpy as np
-import re
 
 
 def tf_idf(sentences, vocab=None):
@@ -12,26 +11,26 @@ def tf_idf(sentences, vocab=None):
 
     Args:
         sentences: list of sentences to analyze
-        vocab: list of vocabulary words to use for analysis
+        vocab: list of vocabulary words to use for the analysis
 
     Returns:
         embeddings: numpy.ndarray of shape (s, f) containing the embeddings
         features: list of the features used for embeddings
     """
-    # Clean sentences: lowercase and strip punctuation
-    cleaned_sentences = []
+    tokenized_sentences = []
+    vocab_set = set()
+
     for sentence in sentences:
-        cleaned = re.sub(r'[^\w\s\']', '', sentence.lower())
-        cleaned_sentences.append(cleaned)
+        words = ''.join(
+            c if c.isalnum() or c in "'-" else ' ' for c in sentence
+        ).lower().split()
+        cleaned_words = [w.strip("'") for w in words if w.strip("'")]
+        tokenized_sentences.append(cleaned_words)
+        if vocab is None:
+            vocab_set.update(cleaned_words)
 
-    tokenized_sentences = [s.split() for s in cleaned_sentences]
-
-    # Determine features
     if vocab is None:
-        words = set()
-        for sentence in tokenized_sentences:
-            words.update(sentence)
-        features = sorted(list(words))
+        features = sorted(list(vocab_set))
     else:
         features = list(vocab)
 
@@ -50,19 +49,18 @@ def tf_idf(sentences, vocab=None):
                 tf[i, j] += 1
         tf[i] = tf[i] / words_in_sentence
 
-    # Calculate Inverse Document Frequency (IDF)
-    # IDF = log(s / df), where df is total documents containing term
+    # Calculate Inverse Document Frequency (IDF) based on all documents
     doc_freq = np.zeros(f)
     for j, feature in enumerate(features):
         for sentence in tokenized_sentences:
             if feature in sentence:
                 doc_freq[j] += 1
 
-    # Apply natural log IDF and normalize final TF-IDF embeddings per sentence
-    idf = np.log(s / np.maximum(doc_freq, 1e-12))
+    # IDF = log(s / df)
+    idf = np.log(s / np.maximum(doc_freq, 1))
     embeddings = tf * idf
 
-    # L2 normalize each non-zero sentence embedding vector
+    # L2 normalize each sentence embedding vector
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
     norms[norms == 0] = 1
     embeddings = embeddings / norms
