@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
-"""Perform K-means clustering on a dataset."""
+"""Module for K-means clustering algorithm."""
 import numpy as np
-initialize = __import__('0-initialize').initialize
 
 
 def kmeans(X, k, iterations=1000):
-    """Performs K-means clustering."""
+    """Performs K-means on a dataset.
+
+    Args:
+        X: numpy.ndarray of shape (n, d) containing the dataset
+        k: positive integer containing the number of clusters
+        iterations: positive integer containing maximum iterations
+
+    Returns:
+        C, clss or None, None on failure
+    """
     if not isinstance(X, np.ndarray) or len(X.shape) != 2:
         return None, None
-    if not isinstance(k, int) or k <= 0:
+    if type(k) is not int or k <= 0:
         return None, None
-    if not isinstance(iterations, int) or iterations <= 0:
+    if type(iterations) is not int or iterations <= 0:
         return None, None
 
-    n, d = X.shape
+    initialize = __import__('0-initialize').initialize
     C = initialize(X, k)
     if C is None:
         return None, None
@@ -21,28 +29,27 @@ def kmeans(X, k, iterations=1000):
     low = np.min(X, axis=0)
     high = np.max(X, axis=0)
 
-    prev_C = None
-    for _ in range(iterations):
-        # Calculate distances and assign clusters (Loop 1)
-        D = np.linalg.norm(X[:, np.newaxis] - C, axis=2)
-        clss = np.argmin(D, axis=1)
+    for i in range(iterations):
+        C_copy = C.copy()
 
-        # Check for convergence
-        if prev_C is not None and np.all(C == prev_C):
-            break
-        prev_C = C.copy()
+        # Calculate distances and assign clusters (no loop)
+        distances = np.linalg.norm(X[:, np.newaxis] - C, axis=2)
+        clss = np.argmin(distances, axis=1)
 
-        # Update centroids (Loop 2)
-        new_C = np.copy(C)
-        for i in range(k):
-            if np.any(clss == i):
-                new_C[i] = np.mean(X[clss == i], axis=0)
+        # Update centroids (Loop 1 allowed inside main iteration loop)
+        for j in range(k):
+            cluster_points = X[clss == j]
+            if len(cluster_points) == 0:
+                C[j] = np.random.uniform(low, high, size=(1, X.shape[1]))
             else:
-                new_C[i] = np.random.uniform(low, high, size=(d,))
-        C = new_C
+                C[j] = cluster_points.mean(axis=0)
 
-    # Final assignment and centroid recalculation to match return state
-    D = np.linalg.norm(X[:, np.newaxis] - C, axis=2)
-    clss = np.argmin(D, axis=1)
+        # Update cluster assignments after centroid movement
+        distances = np.linalg.norm(X[:, np.newaxis] - C, axis=2)
+        clss = np.argmin(distances, axis=1)
+
+        # Check early stopping condition
+        if (C == C_copy).all():
+            break
 
     return C, clss
