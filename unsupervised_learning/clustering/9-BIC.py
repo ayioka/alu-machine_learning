@@ -1,54 +1,42 @@
 #!/usr/bin/env python3
-"""Find the best number of clusters for a GMM using BIC."""
+"""BIC for finding the best number of GMM clusters"""
 import numpy as np
 expectation_maximization = __import__('8-EM').expectation_maximization
 
 
-def BIC(X, kmin=1, kmax=None, iterations=100, tol=1e-5, verbose=False):
-    """Finds the best number of clusters for a GMM using BIC."""
-    if not isinstance(X, np.ndarray) or len(X.shape) != 2:
+def BIC(X, kmin=1, kmax=None, iterations=1000, tol=1e-5, verbose=False):
+    """Finds the best number of clusters for a GMM using BIC
+
+    Returns: best_k, best_result, l, b or None, None, None, None
+    """
+    if not isinstance(X, np.ndarray) or X.ndim != 2:
         return None, None, None, None
+    n, d = X.shape
     if not isinstance(kmin, int) or kmin <= 0:
         return None, None, None, None
-
-    n, d = X.shape
     if kmax is None:
         kmax = n
-    if not isinstance(kmax, int) or kmax <= 0 or kmin > kmax:
+    if not isinstance(kmax, int) or kmax < kmin:
         return None, None, None, None
     if not isinstance(iterations, int) or iterations <= 0:
         return None, None, None, None
-    if not isinstance(tol, float) or tol < 0:
+    if not isinstance(tol, (int, float)) or tol < 0:
         return None, None, None, None
     if not isinstance(verbose, bool):
         return None, None, None, None
-
-    bics = []
-    log_likes = []
-
+    l = []
+    b = []
+    results = []
     for k in range(kmin, kmax + 1):
-        pi, m, S, g, l_g = expectation_maximization(
+        pi, m, S, g, ll = expectation_maximization(
             X, k, iterations, tol, verbose)
         if pi is None:
             return None, None, None, None
-
-        log_likes.append(l_g)
-
-        # Number of parameters p:
-        # (k - 1) priors + k * d means + k * d * (d + 1) / 2 covariance values
-        p = (k - 1) + (k * d) + (k * d * (d + 1) // 2)
-
-        bic = p * np.log(n) - 2 * l_g
-        bics.append(bic)
-
-    bics = np.array(bics)
-    log_likes = np.array(log_likes)
-
-    best_k_idx = np.argmin(bics)
-    best_k = kmin + best_k_idx
-
-    # Re-run EM for optimal k
-    best_result = expectation_maximization(
-        X, best_k, iterations, tol, verbose)
-
-    return best_k, best_result, bics, log_likes
+        p = k * d + k * d * (d + 1) / 2 + k - 1
+        l.append(ll)
+        b.append(p * np.log(n) - 2 * ll)
+        results.append((pi, m, S))
+    l = np.array(l)
+    b = np.array(b)
+    best = np.argmin(b)
+    return kmin + best, results[best], l, b
